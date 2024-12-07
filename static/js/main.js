@@ -1,9 +1,43 @@
+// グローバルなtoken変数
 let token = localStorage.getItem('token');
 
+// 画面表示の制御
+function showWelcome() {
+    document.getElementById('welcome-section').style.display = 'block';
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('register-section').style.display = 'none';
+    document.getElementById('task-section').style.display = 'none';
+}
+
+function showLoginForm() {
+    document.getElementById('welcome-section').style.display = 'none';
+    document.getElementById('login-section').style.display = 'block';
+    document.getElementById('register-section').style.display = 'none';
+}
+
+function showRegisterForm() {
+    document.getElementById('welcome-section').style.display = 'none';
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('register-section').style.display = 'block';
+}
+
+window.showTaskSection = function() {
+    document.getElementById('welcome-section').style.display = 'none';
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('register-section').style.display = 'none';
+    document.getElementById('task-section').style.display = 'block';
+}
+
 // 認証関連の関数
-async function register() {
+window.register = async function() {
     const username = document.getElementById('register-username').value;
     const password = document.getElementById('register-password').value;
+    const confirmPassword = document.getElementById('register-password-confirm').value;
+
+    if (password !== confirmPassword) {
+        alert('パスワードが一致しません');
+        return;
+    }
 
     try {
         const response = await fetch('/api/register', {
@@ -17,6 +51,7 @@ async function register() {
         const data = await response.json();
         if (response.ok) {
             alert('登録が完了しました。ログインしてください。');
+            showLoginForm();
         } else {
             alert(data.error);
         }
@@ -25,7 +60,7 @@ async function register() {
     }
 }
 
-async function login() {
+window.login = async function() {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
 
@@ -53,7 +88,7 @@ async function login() {
 }
 
 // タスク関連の関数
-async function createTask() {
+window.createTask = async function() {
     const title = document.getElementById('task-title').value;
     const description = document.getElementById('task-description').value;
     const dueDate = document.getElementById('task-due-date').value;
@@ -87,7 +122,7 @@ async function createTask() {
     }
 }
 
-async function loadTasks() {
+window.loadTasks = async function() {
     try {
         const response = await fetch('/api/tasks', {
             headers: {
@@ -115,7 +150,7 @@ async function loadTasks() {
     }
 }
 
-async function toggleTaskStatus(taskId) {
+window.toggleTaskStatus = async function(taskId) {
     try {
         const response = await fetch(`/api/tasks/${taskId}`, {
             method: 'PUT',
@@ -134,7 +169,7 @@ async function toggleTaskStatus(taskId) {
     }
 }
 
-async function deleteTask(taskId) {
+window.deleteTask = async function(taskId) {
     if (!confirm('本当に削除しますか？')) return;
 
     try {
@@ -154,11 +189,6 @@ async function deleteTask(taskId) {
 }
 
 // ユーティリティ関数
-function showTaskSection() {
-    document.getElementById('auth-section').style.display = 'none';
-    document.getElementById('task-section').style.display = 'block';
-}
-
 function clearTaskForm() {
     document.getElementById('task-title').value = '';
     document.getElementById('task-description').value = '';
@@ -174,8 +204,15 @@ function getPriorityClass(priority) {
     }
 }
 
+window.logout = function() {
+    localStorage.removeItem('token');
+    showWelcome();
+}
+
 // 初期化
 if (token) {
     showTaskSection();
     loadTasks();
+} else {
+    showWelcome();
 }

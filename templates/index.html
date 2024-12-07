@@ -5,24 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>タスク管理アプリ</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/main.js" defer></script>
 </head>
 <body>
     <div class="container">
         <h1>タスク管理アプリ</h1>
-        <div id="auth-section">
+        <div id="welcome-section">
+            <div class="welcome-buttons">
+                <button onclick="showLoginForm()">ログイン</button>
+                <button onclick="showRegisterForm()">新規登録</button>
+            </div>
+        </div>
+
+        <div id="login-section" class="auth-section" style="display: none;">
             <div id="login-form" class="auth-form">
                 <h2>ログイン</h2>
                 <input type="text" id="login-username" placeholder="ユーザー名">
                 <input type="password" id="login-password" placeholder="パスワード">
-                <button onclick="login()">ログイン</button>
+                <div class="form-buttons">
+                    <button onclick="login()">ログイン</button>
+                    <button class="secondary" onclick="showWelcome()">戻る</button>
+                </div>
             </div>
+        </div>
+
+        <div id="register-section" class="auth-section" style="display: none;">
             <div id="register-form" class="auth-form">
                 <h2>新規登録</h2>
                 <input type="text" id="register-username" placeholder="ユーザー名">
                 <input type="password" id="register-password" placeholder="パスワード">
-                <button onclick="register()">登録</button>
+                <input type="password" id="register-password-confirm" placeholder="パスワード（確認）">
+                <div class="form-buttons">
+                    <button onclick="register()">登録</button>
+                    <button class="secondary" onclick="showWelcome()">戻る</button>
+                </div>
             </div>
         </div>
+
         <div id="task-section" style="display: none;">
             <div class="task-form">
                 <h2>新しいタスク</h2>
@@ -37,8 +56,10 @@
                 <button onclick="createTask()">追加</button>
             </div>
             <div id="task-list"></div>
+            <div class="logout-section">
+                <button onclick="logout()" class="logout-btn">ログアウト</button>
+            </div>
         </div>
     </div>
-    <script src="/static/js/main.js"></script>
 </body>
 </html>
