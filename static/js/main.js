@@ -1,54 +1,181 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const app = document.getElementById('app');
-    
-    // タスク入力フォームの作成
-    const form = document.createElement('form');
-    form.innerHTML = `
-        <div style="margin-bottom: 20px">
-            <input type="text" id="taskInput" placeholder="新しいタスクを入力" style="padding: 8px; width: 70%">
-            <button type="submit" style="padding: 8px; margin-left: 10px">追加</button>
-        </div>
-    `;
-    
-    // タスクリストの表示領域
-    const taskList = document.createElement('div');
-    app.appendChild(form);
-    app.appendChild(taskList);
-    
-    // タスクの読み込みと表示
-    const loadTasks = async () => {
-        const response = await fetch('/api/tasks');
+let token = localStorage.getItem('token');
+
+// 認証関連の関数
+async function register() {
+    const username = document.getElementById('register-username').value;
+    const password = document.getElementById('register-password').value;
+
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('登録が完了しました。ログインしてください。');
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        alert('エラーが発生しました');
+    }
+}
+
+async function login() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            token = data.token;
+            localStorage.setItem('token', token);
+            showTaskSection();
+            loadTasks();
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        alert('エラーが発生しました');
+    }
+}
+
+// タスク関連の関数
+async function createTask() {
+    const title = document.getElementById('task-title').value;
+    const description = document.getElementById('task-description').value;
+    const dueDate = document.getElementById('task-due-date').value;
+    const priority = document.getElementById('task-priority').value;
+
+    try {
+        const response = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token,
+            },
+            body: JSON.stringify({
+                title,
+                description,
+                due_date: new Date(dueDate),
+                priority: parseInt(priority),
+                done: false,
+            }),
+        });
+
+        if (response.ok) {
+            clearTaskForm();
+            loadTasks();
+        } else {
+            const data = await response.json();
+            alert(data.error);
+        }
+    } catch (error) {
+        alert('エラーが発生しました');
+    }
+}
+
+async function loadTasks() {
+    try {
+        const response = await fetch('/api/tasks', {
+            headers: {
+                'Authorization': token,
+            },
+        });
+
         const tasks = await response.json();
-        
+        const taskList = document.getElementById('task-list');
         taskList.innerHTML = tasks.map(task => `
-            <div style="padding: 10px; margin: 5px 0; background: #f9f9f9; border-radius: 4px">
-                <input type="checkbox" ${task.done ? 'checked' : ''}>
-                <span>${task.title}</span>
-                <small style="color: #666">作成日: ${new Date(task.created_at).toLocaleString()}</small>
+            <div class="task-item ${getPriorityClass(task.priority)}">
+                <h3>${task.title}</h3>
+                <p>${task.description}</p>
+                <p>期限: ${new Date(task.due_date).toLocaleDateString()}</p>
+                <div class="task-controls">
+                    <button onclick="toggleTaskStatus(${task.ID})" class="complete-btn">
+                        ${task.done ? '未完了に戻す' : '完了にする'}
+                    </button>
+                    <button onclick="deleteTask(${task.ID})" class="delete-btn">削除</button>
+                </div>
             </div>
         `).join('');
-    };
-    
-    // 新しいタスクの追加
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('taskInput');
-        const title = input.value.trim();
-        
-        if (title) {
-            await fetch('/api/tasks', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ title, done: false }),
-            });
-            
-            input.value = '';
+    } catch (error) {
+        alert('タスクの読み込みに失敗しました');
+    }
+}
+
+async function toggleTaskStatus(taskId) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token,
+            },
+            body: JSON.stringify({ done: true }),
+        });
+
+        if (response.ok) {
             loadTasks();
         }
-    };
-    
-    // 初期表示
+    } catch (error) {
+        alert('エラーが発生しました');
+    }
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('本当に削除しますか？')) return;
+
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token,
+            },
+        });
+
+        if (response.ok) {
+            loadTasks();
+        }
+    } catch (error) {
+        alert('エラーが発生しました');
+    }
+}
+
+// ユーティリティ関数
+function showTaskSection() {
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('task-section').style.display = 'block';
+}
+
+function clearTaskForm() {
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-due-date').value = '';
+    document.getElementById('task-priority').value = '1';
+}
+
+function getPriorityClass(priority) {
+    switch (priority) {
+        case 3: return 'high-priority';
+        case 2: return 'medium-priority';
+        default: return '';
+    }
+}
+
+// 初期化
+if (token) {
+    showTaskSection();
     loadTasks();
-});
+}
